@@ -1,12 +1,7 @@
 { avr ? true, arm ? true, teensy ? true }:
 
 let
-  nixpkgs = builtins.fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/c4b26e702044dbf40f8236136c099d8ab6778514.tar.gz";
-    sha256 = "0w6hgs01qzni3a7cvgadjlmcdlb6vay3w910vh4k9fc949ii7s60";
-  };
-
-  pkgs = import nixpkgs { };
+  pkgs = import <nixos-unstable> { };
 
   hjson = with pkgs.python3Packages; buildPythonPackage rec {
     pname = "hjson";
@@ -43,7 +38,9 @@ let
     appdirs
     argcomplete
     colorama
+    dotty-dict
     hjson
+    jsonschema
     milc
     pygments
     # requirements-dev.txt
@@ -87,5 +84,6 @@ mkShell {
     # Prevent the avr-gcc wrapper from picking up host GCC flags
     # like -iframework, which is problematic on Darwin
     unset NIX_CFLAGS_COMPILE_FOR_TARGET
+    export PATH="/home/hazel/src/qmk_firmware/bin:$PATH"
   '';
 }
