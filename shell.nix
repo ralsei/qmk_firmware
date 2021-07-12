@@ -1,54 +1,18 @@
 { avr ? true, arm ? true, teensy ? true }:
-
 let
-  pkgs = import <nixos-unstable> { };
+  # We specify sources via Niv: use "niv update nixpkgs" to update nixpkgs, for example.
+  sources = import ./nix/sources.nix { };
+  pkgs = import sources.nixpkgs { };
 
-  hjson = with pkgs.python3Packages; buildPythonPackage rec {
-    pname = "hjson";
-    version = "3.0.1";
+  poetry2nix = pkgs.callPackage (import sources.poetry2nix) { };
 
-    src = fetchPypi {
-      inherit pname version;
-      sha256 = "1yaimcgz8w0ps1wk28wk9g9zdidp79d14xqqj9rjkvxalvx2f5qx";
-    };
-
-    doCheck = false;
+  # Builds the python env based on nix/pyproject.toml and
+  # nix/poetry.lock Use the "poetry update --lock", "poetry add
+  # --lock" etc. in the nix folder to adjust the contents of those
+  # files if the requirements*.txt files change
+  pythonEnv = poetry2nix.mkPoetryEnv {
+    projectDir = ./nix;
   };
-
-  milc = with pkgs.python3Packages; buildPythonPackage rec {
-    pname = "milc";
-    version = "1.0.10";
-
-    src = fetchPypi {
-      inherit pname version;
-      sha256 = "1q1p7qrqk78mw67nhv04zgxaq8himmdxmy2vp4fmi7chwgcbpi32";
-    };
-
-    propagatedBuildInputs = [
-      appdirs
-      argcomplete
-      colorama
-    ];
-
-    doCheck = false;
-  };
-
-  pythonEnv = pkgs.python3.withPackages (p: with p; [
-    # requirements.txt
-    appdirs
-    argcomplete
-    colorama
-    dotty-dict
-    hjson
-    jsonschema
-    milc
-    pygments
-    # requirements-dev.txt
-    nose2
-    flake8
-    pep8-naming
-    yapf
-  ]);
 in
 
 with pkgs;
@@ -68,7 +32,7 @@ in
 mkShell {
   name = "qmk-firmware";
 
-  buildInputs = [ clang-tools dfu-programmer dfu-util diffutils git pythonEnv ]
+  buildInputs = [ clang-tools dfu-programmer dfu-util diffutils git pythonEnv poetry niv ]
     ++ lib.optional avr [
       pkgsCross.avr.buildPackages.binutils
       pkgsCross.avr.buildPackages.gcc8
